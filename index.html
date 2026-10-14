@@ -122,6 +122,7 @@
 
     <div class="gpanel" style="margin-top:16px">
       <h3>🎬 توليد فيديو قصصي من وصف نصي</h3>
+      <textarea id="storyPrompt" rows="3" placeholder="اكتب قصة الفيديو هنا... مثال: تاجر يمشي بسوق شعبي ويفتح دكانه بالصباح"></textarea>
       <p class="hint" style="margin-bottom:12px">الذكاء يرسم مشاهد متتابعة من وصفك ويلحمها فيديو متحرك واحد بزوم ناعم — بدون صوت</p>
       <div class="btnrow">
         <select id="storyScenes" style="flex:1;min-width:130px">
@@ -245,7 +246,7 @@
   </div>
 </div>
 
-<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.0</footer>
+<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.1</footer>
 
 <script type="module">
   let seg=null;
@@ -370,8 +371,9 @@ async function generateImages(){
 
 /* ---------- STORY VIDEO (description to video) ---------- */
 async function generateStoryVideo(){
-  const prompt=document.getElementById('genPrompt').value.trim();
-  if(!prompt){ slog('اكتب وصفاً أولاً في خانة الوصف ✍️'); return; }
+  let prompt=document.getElementById('storyPrompt').value.trim();
+  if(!prompt) prompt=document.getElementById('genPrompt').value.trim();
+  if(!prompt){ slog('اكتب وصف الفيديو أولاً ✍️'); return; }
   const btn=document.getElementById('storyBtn'); btn.disabled=true;
   const scenes=+document.getElementById('storyScenes').value;
   const per=+document.getElementById('storyDur').value;
