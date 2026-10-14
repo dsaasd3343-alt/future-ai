@@ -261,7 +261,7 @@
   <p class="hint">الدفع يفتح بأمان على PayPal — اترك الخانة فاضية واختر المبلغ هناك إذا تريد</p>
 </div>
 
-<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.3</footer>
+<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.4</footer>
 
 <script type="module">
   let seg=null;
@@ -356,15 +356,18 @@ async function pollinate(prompt,w,h,seed){
   const full=prompt+(add?', '+add:'');
   const base='https://image.pollinations.ai/prompt/'+encodeURIComponent(full)+'?width='+w+'&height='+h+'&seed='+seed+'&nologo=true&model=flux';
   let lastErr=new Error('فشل التوليد');
-  for(let attempt=0;attempt<3;attempt++){
-    try{
-      const res=await fetch(base+'&rid='+Date.now());
-      if(res.ok) return URL.createObjectURL(await res.blob());
-      if(res.status===402) lastErr=new Error('خدمة التوليد المجانية مشغولة حالياً (402) — انتظر شوية واضغط زر التوليد مرة ثانية');
-      else lastErr=new Error('خدمة التوليد ردت '+res.status);
-      if(res.status!==402&&res.status!==429&&res.status<500) break;
-    }catch(e){ lastErr=e; }
-    await new Promise(r=>setTimeout(r,4000*(attempt+1)));
+  const models=['flux','turbo'];
+  for(const model of models){
+    for(let attempt=0;attempt<4;attempt++){
+      try{
+        const res=await fetch(base+'&model='+model+'&rid='+Date.now());
+        if(res.ok) return URL.createObjectURL(await res.blob());
+        if(res.status===402||res.status===429) lastErr=new Error('خدمة التوليد المجانية مشغولة حالياً (402) — انتظر دقيقة واضغط زر التوليد مرة ثانية');
+        else lastErr=new Error('خدمة التوليد ردت '+res.status);
+        if(res.status!==402&&res.status!==429&&res.status<500) break;
+      }catch(e){ lastErr=e; }
+      await new Promise(r=>setTimeout(r,5000+(attempt*5000)));
+    }
   }
   throw lastErr;
 }
@@ -428,7 +431,7 @@ async function generateStoryVideo(){
       prompt=await toEnglish(prompt);
     }
     for(let i=0;i<scenes;i++){
-      if(i>0) await new Promise(r=>setTimeout(r,1500));
+      if(i>0) await new Promise(r=>setTimeout(r,2500));
       slog('🎨 رسم المشهد '+(i+1)+' من '+scenes+'...');
       const url=await pollinate(prompt+', cinematic still, '+shots[i%shots.length],W,H,seed+i*77);
       const im=await new Promise((res,rej)=>{ const x=new Image(); x.onload=()=>res(x); x.onerror=()=>rej(new Error('فشل تحميل مشهد')); x.src=url; });
@@ -777,13 +780,20 @@ async function exportVideo(){
 function newVideo(){ vidDetect=false; vid.pause(); vid.src=''; document.getElementById('wsVid').style.display='none'; document.getElementById('dropVid').style.display='block'; }
 buildPresets('vidPresets',(k)=>{ vidPreset=k; markActive('vidPresets',k); applyVid(); });
 
-/* ---------- DONATION (optional) ---------- */
+/* ---------- DONATION (optional, email hidden) ---------- */
+const DONATE_B64='SW1hZC5kcmVhbWVyODdAZ21haWwuY29t';
+const HOSTED_BUTTON=''; // إذا أنشأت زر Donate رسمي من PayPal، ضع الـ ID هنا وسيتخفى البريد نهائياً
 function donate(){
   const raw=document.getElementById('donateAmount').value.trim();
   const amt=parseFloat(raw);
   const cur=document.getElementById('donateCurrency').value;
-  let url='https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business='+encodeURIComponent('Imad.dreamer87@gmail.com')+'&currency_code='+cur+'&item_name='+encodeURIComponent('Future AI Studio');
-  if(amt>0) url+='&amount='+encodeURIComponent(amt);
+  let url;
+  if(HOSTED_BUTTON){
+    url='https://www.paypal.com/donate/?hosted_button_id='+encodeURIComponent(HOSTED_BUTTON);
+  }else{
+    url='https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business='+encodeURIComponent(atob(DONATE_B64))+'&currency_code='+cur+'&item_name='+encodeURIComponent('Future AI Studio');
+    if(amt>0) url+='&amount='+encodeURIComponent(amt);
+  }
   window.open(url,'_blank');
 }
 </script>
