@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Future AI Studio — ذكاء اصطناعي حقيقي لتعديل الصور والفيديو</title>
+<title>Future AI Studio — توليد وتعديل الصور والفيديو بالذكاء</title>
 <!-- AI engines (client-side, free) -->
 <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
@@ -23,7 +23,7 @@
   .lead{text-align:center;margin:20px 0 6px;color:var(--muted);font-size:.95rem}
   .lead b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
   .tabs{display:flex;gap:10px;margin:16px 0}
-  .tab{flex:1;text-align:center;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:700;font-size:1rem;transition:.2s}
+  .tab{flex:1;text-align:center;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:700;font-size:.95rem;transition:.2s}
   .tab.active{background:var(--grad);color:#070a14;border-color:transparent}
   .pane{display:none}
   .pane.active{display:block}
@@ -43,13 +43,13 @@
   .vidbox .ovl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;border-radius:10px}
   .controls{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;align-self:start;max-height:78vh;overflow-y:auto}
   .ctl h4{font-size:.85rem;margin-bottom:8px}
-  .aibadge{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.4);color:var(--a2)}
+  .aibadge{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.4)}
   .tools h4{display:flex;align-items:center;gap:6px;font-size:.9rem;margin-bottom:10px}
   .tools h4 span{font-size:1rem;animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .ctl{border-radius:12px}
   .btnrow{display:flex;flex-wrap:wrap;gap:8px}
-  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:10px 14px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.88rem;transition:.2s;flex:1;min-width:120px}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:10px 14px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.88rem;transition:.2s;flex:1;min-width:110px}
   .btn:hover{border-color:var(--a1)}
   .btn.primary{background:var(--grad);color:#070a14;font-weight:700;border:none}
   .btn.active{border-color:var(--a2);color:var(--a2)}
@@ -64,24 +64,87 @@
   .status .ok{color:var(--a2)}
   .hidden{display:none!important}
   footer{padding:24px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line);margin-top:30px}
+  /* generate pane */
+  .gpanel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:6px}
+  .gpanel h3{font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  textarea,input[type=text],select{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:12px;padding:13px 15px;color:var(--ink);font-family:inherit;font-size:.95rem;width:100%}
+  textarea:focus,input:focus,select:focus{outline:none;border-color:var(--a1)}
+  .hint{color:var(--muted);font-size:.8rem;margin-top:8px}
+  .gresult{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:18px}
+  .gcard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .gcard img{width:100%;border-radius:10px;display:block;min-height:120px;background:#0a0f1d}
+  .gcard .btnrow .btn{min-width:90px;font-size:.8rem;padding:8px 10px}
+  .spinner{display:inline-block;width:38px;height:38px;border:3px solid rgba(108,123,255,.25);border-top-color:var(--a2);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .gvid{margin-top:18px;display:none}
+  .gvid video{max-width:100%;border-radius:12px;background:#000}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <div class="logo"><span class="mark">◆</span> Future AI Studio <small>نماذج ذكاء اصطناعي حقيقية تعمل داخل جهازك</small></div>
+  <div class="logo"><span class="mark">◆</span> Future AI Studio <small>توليد • تعديل • ذكاء حقيقي داخل جهازك</small></div>
 </div>
 
 <div class="wrap">
-  <p class="lead">إزالة خلفية بالذكاء • كشف الأجسام • وصف الصورة • تحسين تلقائي — <b>مجاناً وبدون رفع ملفاتك لأي سيرفر</b></p>
+  <p class="lead">توليد صور من الوصف • فيديو قصصي من الوصف • إزالة خلفية • كشف أجسام — <b>مجاناً وبدون تسجيل</b></p>
 
   <div class="tabs">
-    <div class="tab active" id="tabImg" onclick="switchTab('img')">🖼️ تعديل الصور</div>
+    <div class="tab active" id="tabGen" onclick="switchTab('gen')">✨ توليد بالوصف</div>
+    <div class="tab" id="tabImg" onclick="switchTab('img')">🖼️ تعديل الصور</div>
     <div class="tab" id="tabVid" onclick="switchTab('vid')">🎬 تعديل الفيديو</div>
   </div>
 
+  <!-- GENERATE -->
+  <div class="pane active" id="paneGen">
+    <div class="gpanel">
+      <h3>🖼️ توليد صور من وصف نصي</h3>
+      <textarea id="genPrompt" rows="3" placeholder="اكتب وصف الصورة اللي تريدها... مثال: قطة بيضاء تجلس على سطح بيت قديم بغداد وقت الغروب"></textarea>
+      <p class="hint">💡 الوصف بالإنجليزي يعطي نتائج أدق، بس العربية تشتغل أيضاً</p>
+      <div class="ctl" style="margin-top:14px"><h4>🎨 الستايل</h4><div class="presets" id="genStyles"></div></div>
+      <div class="btnrow" style="margin-top:14px">
+        <select id="genSize" style="flex:1;min-width:130px">
+          <option value="1024x1024">مربع 1024×1024</option>
+          <option value="1280x720">أفقي 1280×720</option>
+          <option value="768x1024">عمودي 768×1024</option>
+        </select>
+        <select id="genCount" style="flex:1;min-width:130px">
+          <option value="1">صورة واحدة</option>
+          <option value="2">صورتان</option>
+          <option value="3">ثلاث صور</option>
+          <option value="4">أربع صور</option>
+        </select>
+        <button class="btn primary" style="flex:2;min-width:150px" id="genBtn" onclick="generateImages()">✨ توليد</button>
+      </div>
+      <div class="status" id="genStatus"></div>
+      <div class="gresult" id="genResults"></div>
+    </div>
+
+    <div class="gpanel" style="margin-top:16px">
+      <h3>🎬 توليد فيديو قصصي من وصف نصي</h3>
+      <p class="hint" style="margin-bottom:12px">الذكاء يرسم مشاهد متتابعة من وصفك ويلحمها فيديو متحرك واحد بزوم ناعم — بدون صوت</p>
+      <div class="btnrow">
+        <select id="storyScenes" style="flex:1;min-width:130px">
+          <option value="3">3 مشاهد</option>
+          <option value="4" selected>4 مشاهد</option>
+          <option value="5">5 مشاهد</option>
+        </select>
+        <select id="storyDur" style="flex:1;min-width:130px">
+          <option value="3">3 ثواني للمشهد</option>
+          <option value="4" selected>4 ثواني</option>
+          <option value="5">5 ثواني</option>
+        </select>
+        <button class="btn primary" style="flex:2;min-width:170px" id="storyBtn" onclick="generateStoryVideo()">🎬 توليد الفيديو</button>
+      </div>
+      <div class="status" id="storyStatus"></div>
+      <div class="gvid" id="storyBox"><video id="storyVideo" controls playsinline></video>
+        <div class="btnrow" style="margin-top:10px"><a class="btn primary" id="storyDownload" download="future-ai-story.webm" style="text-align:center;text-decoration:none">💾 تحميل الفيديو</a></div>
+      </div>
+    </div>
+  </div>
+
   <!-- IMAGES -->
-  <div class="pane active" id="paneImg">
+  <div class="pane" id="paneImg">
     <label class="drop" id="dropImg" for="fileImg">
       <div class="ico">🖼️</div>
       <p><b>اسحب صورتك هنا</b> أو اضغط للاختيار<br>JPG / PNG / WebP</p>
@@ -182,9 +245,8 @@
   </div>
 </div>
 
-<footer>© 2026 Future AI Studio — نماذج MediaPipe و TensorFlow تعمل بالكامل داخل متصفحك • لا تُرفع ملفاتك لأي سيرفر • الإصدار 3.0</footer>
+<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.0</footer>
 
-<!-- MediaPipe image segmentation (background removal) -->
 <script type="module">
   let seg=null;
   window.getSeg = async () => {
@@ -204,14 +266,14 @@
 <script>
 /* ---------- tabs ---------- */
 function switchTab(w){
-  document.getElementById('tabImg').classList.toggle('active',w==='img');
-  document.getElementById('tabVid').classList.toggle('active',w==='vid');
-  document.getElementById('paneImg').classList.toggle('active',w==='img');
-  document.getElementById('paneVid').classList.toggle('active',w==='vid');
+  ['gen','img','vid'].forEach(k=>{
+    document.getElementById('tab'+k[0].toUpperCase()+k.slice(1)).classList.toggle('active',w===k);
+    document.getElementById('pane'+k[0].toUpperCase()+k.slice(1)).classList.toggle('active',w===k);
+  });
 }
 
 /* ---------- labels ---------- */
-const AR={person:'إنسان','cell phone':'جوال',laptop:'لابتوب',car:'سيارة',truck:'شاحنة',bus:'باص',bicycle:'دراجة هوائية',motorcycle:'دراجة نارية','sports ball':'كرة',dog:'كلب',cat:'قطة',bird:'طائر',horse:'حصان',sheep:'خروف',cow:'بقرة',elephant:'فيل',bear:'دب',zebra:'حصان مخطط',giraffe:'زرافة',chair:'كرسي',couch:'أريكة','potted plant':'نبتة',bed:'سرير','dining table':'طاولة',bottle:'زجاجة','wine glass':'كأس','cup':'كوب',banana:'موزة',apple:'تفاحة',orange:'برتقالة',pizza:'بيتزا',cake:'كيكة',book:'كتاب','cellular telephone':'جوال','tv':'شاشة','remote':'ريموت',keyboard:'كيبورد',mouse:'فأرة',backpack:'حقيبة ظهر',handbag:'حقيبة يد',suitcase:'حقيبة سفر',clock:'ساعة','scissors':'مقص','teddy bear':'دبداب',toothbrush:'فرشاة أسنان','dining table':'طاولة','hot dog':'هوت دوغ','frisbee':'فريسبي','baseball glove':'قفاز بيسبول','sports car':'سيارة رياضية','monitor':'شاشة','coffee mug':'كوب قهوة','Egyptian cat':'قطة','golden retriever':'كلب','Labrador retriever':'كلب','mobile phone':'جوال'};
+const AR={person:'إنسان','cell phone':'جوال',laptop:'لابتوب',car:'سيارة',truck:'شاحنة',bus:'باص',bicycle:'دراجة هوائية',motorcycle:'دراجة نارية','sports ball':'كرة',dog:'كلب',cat:'قطة',bird:'طائر',horse:'حصان',sheep:'خروف',cow:'بقرة',elephant:'فيل',bear:'دب',zebra:'حصان مخطط',giraffe:'زرافة',chair:'كرسي',couch:'أريكة','potted plant':'نبتة',bed:'سرير','dining table':'طاولة',bottle:'زجاجة','wine glass':'كأس','cup':'كوب',banana:'موزة',apple:'تفاحة',orange:'برتقالة',pizza:'بيتزا',cake:'كيكة',book:'كتاب','cellular telephone':'جوال','tv':'شاشة','remote':'ريموت',keyboard:'كيبورد',mouse:'فأرة',backpack:'حقيبة ظهر',handbag:'حقيبة يد',suitcase:'حقيبة سفر',clock:'ساعة',scissors:'مقص','teddy bear':'دبداب',toothbrush:'فرشاة أسنان','hot dog':'هوت دوغ','frisbee':'فريسبي','sports car':'سيارة رياضية','monitor':'شاشة','coffee mug':'كوب قهوة','Egyptian cat':'قطة','golden retriever':'كلب','Labrador retriever':'كلب','mobile phone':'جوال'};
 const arName=e=>AR[e]||e;
 
 /* ---------- presets ---------- */
@@ -237,13 +299,153 @@ function markActive(containerId,k){
   document.querySelectorAll('#'+containerId+' .preset').forEach(p=>p.classList.toggle('on',p.dataset.k===k));
 }
 
+/* ---------- GENERATE (text to image, Pollinations - free, no key) ---------- */
+const STYLES={
+  none:{label:'بدون ستايل',add:''},
+  real:{label:'واقعي',add:'ultra realistic photography, 8k, sharp focus'},
+  cinema:{label:'سينمائي',add:'cinematic shot, dramatic lighting, film grain, movie scene'},
+  anime:{label:'أنمي',add:'anime style illustration, studio ghibli inspired'},
+  art:{label:'فن رقمي',add:'digital art, concept art, trending on artstation'},
+  fantasy:{label:'خيالي',add:'epic fantasy art, magical, highly detailed'},
+  product:{label:'منتج',add:'professional product photography, studio lighting, clean background'}
+};
+let genStyle='none';
+(function(){
+  const box=document.getElementById('genStyles');
+  for(const k in STYLES){
+    const b=document.createElement('span'); b.className='preset'; b.textContent=STYLES[k].label; b.dataset.k=k;
+    if(k==='none') b.classList.add('on');
+    b.onclick=()=>{ genStyle=k; box.querySelectorAll('.preset').forEach(p=>p.classList.toggle('on',p.dataset.k===k)); };
+    box.appendChild(b);
+  }
+})();
+
+function glog(t){ document.getElementById('genStatus').innerHTML=t; }
+function slog(t){ document.getElementById('storyStatus').innerHTML=t; }
+
+async function pollinate(prompt,w,h,seed){
+  const add=STYLES[genStyle].add;
+  const full=prompt+(add?', '+add:'');
+  const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(full)+'?width='+w+'&height='+h+'&seed='+seed+'&nologo=true&model=flux';
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('خدمة التوليد ردت '+res.status+' — حاول بعد لحظات');
+  const blob=await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+async function generateImages(){
+  const prompt=document.getElementById('genPrompt').value.trim();
+  if(!prompt){ glog('اكتب وصفاً أولاً ✍️'); return; }
+  const btn=document.getElementById('genBtn'); btn.disabled=true;
+  const [w,h]=document.getElementById('genSize').value.split('x').map(Number);
+  const n=+document.getElementById('genCount').value;
+  const grid=document.getElementById('genResults');
+  const seed=Math.floor(Math.random()*999999);
+  try{
+    for(let i=0;i<n;i++){
+      glog('🎨 الذكاء يرسم الصورة '+(i+1)+' من '+n+'... (يمكن أن تستغرق حتى دقيقة)');
+      const url=await pollinate(prompt,w,h,seed+i*77);
+      const card=document.createElement('div'); card.className='gcard';
+      card.innerHTML='<img alt="نتيجة التوليد"><div class="btnrow"></div>';
+      card.querySelector('img').src=url;
+      const dl=document.createElement('button'); dl.className='btn primary'; dl.textContent='💾 تحميل';
+      dl.onclick=()=>{ const a=document.createElement('a'); a.download='future-ai-gen-'+Date.now()+'.png'; a.href=url; a.click(); };
+      const ed=document.createElement('button'); ed.className='btn'; ed.textContent='🖌️ تعديل';
+      ed.onclick=()=>{
+        const im=card.querySelector('img');
+        const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
+        c.getContext('2d').drawImage(im,0,0);
+        const ni=new Image();
+        ni.onload=()=>{ switchTab('img'); setBaseImage(ni,c.toDataURL('image/png')); };
+        ni.src=c.toDataURL('image/png');
+      };
+      card.querySelector('.btnrow').append(dl,ed);
+      grid.prepend(card);
+      glog('✅ صورة '+(i+1)+' جاهزة'+(i<n-1?' — التالية قادمة...':''));
+    }
+    glog('🎉 تم توليد '+n+' صورة من وصفك');
+  }catch(e){ glog('خطأ: '+e.message); }
+  btn.disabled=false;
+}
+
+/* ---------- STORY VIDEO (description to video) ---------- */
+async function generateStoryVideo(){
+  const prompt=document.getElementById('genPrompt').value.trim();
+  if(!prompt){ slog('اكتب وصفاً أولاً في خانة الوصف ✍️'); return; }
+  const btn=document.getElementById('storyBtn'); btn.disabled=true;
+  const scenes=+document.getElementById('storyScenes').value;
+  const per=+document.getElementById('storyDur').value;
+  const W=1280,H=720;
+  const shots=['wide establishing shot','medium shot, atmospheric','close up detail shot','dynamic angle shot','final wide shot, golden light'];
+  const seed=Math.floor(Math.random()*999999);
+  const imgs=[];
+  try{
+    for(let i=0;i<scenes;i++){
+      slog('🎨 رسم المشهد '+(i+1)+' من '+scenes+'...');
+      const url=await pollinate(prompt+', cinematic still, '+shots[i%shots.length],W,H,seed+i*77);
+      const im=await new Promise((res,rej)=>{ const x=new Image(); x.onload=()=>res(x); x.onerror=()=>rej(new Error('فشل تحميل مشهد')); x.src=url; });
+      imgs.push(im);
+    }
+    slog('🎬 جاري تجميع الفيديو... ('+(scenes*per)+' ثانية)');
+    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const cx=c.getContext('2d');
+    const stream=c.captureStream(30);
+    let mime='video/webm;codecs=vp9';
+    if(!MediaRecorder.isTypeSupported(mime)) mime='video/webm';
+    const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:3500000});
+    const chunks=[]; rec.ondataavailable=ev=>{ if(ev.data.size) chunks.push(ev.data); };
+    const done=new Promise(r=>rec.onstop=r);
+    rec.start(100);
+    const fade=0.7; // crossfade seconds
+    const total=scenes*per;
+    const oc=document.createElement('canvas'); oc.width=W; oc.height=H;
+    const ocx=oc.getContext('2d');
+    const t0=performance.now();
+    await new Promise(finish=>{
+      function frame(){
+        const t=(performance.now()-t0)/1000;
+        if(t>=total){ finish(); return; }
+        const idx=Math.min(scenes-1,Math.floor(t/per));
+        const local=t-idx*per;
+        // current scene with slow zoom on offscreen canvas
+        drawCover(ocx,imgs[idx],1+0.06*(local/per));
+        // crossfade into next scene near the end of each scene
+        if(local>per-fade && idx<scenes-1){
+          const a=(local-(per-fade))/fade;
+          drawCover(cx,imgs[idx+1],1);
+          cx.globalAlpha=1-a; cx.drawImage(oc,0,0); cx.globalAlpha=1;
+        } else {
+          cx.drawImage(oc,0,0);
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    });
+    rec.stop(); await done;
+    const blob=new Blob(chunks,{type:'video/webm'});
+    const url=URL.createObjectURL(blob);
+    document.getElementById('storyVideo').src=url;
+    document.getElementById('storyDownload').href=url;
+    document.getElementById('storyBox').style.display='block';
+    slog('🎉 الفيديو القصصي جاهز — شاهده أو حمّله');
+  }catch(e){ slog('خطأ: '+e.message); }
+  btn.disabled=false;
+}
+function drawCover(cx,img,sx,sy){
+  const W=cx.canvas.width,H=cx.canvas.height;
+  const r=Math.max(W/img.width,H/img.height)*(sx||1);
+  const w=img.width*r,h=img.height*r;
+  cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
+  cx.drawImage(img,(W-w)/2,(H-h)/2,w,h);
+}
+
 /* ---------- IMAGE state ---------- */
 let img=null, originalSrc=null, rot=0, flip=false;
 const imgCanvas=document.getElementById('imgCanvas'), ictx=imgCanvas.getContext('2d');
 
 function ilog(t,ok){ const s=document.getElementById('istatus'); s.innerHTML=ok?'<span class="ok">'+t+'</span>':t; }
-function busyBtn(btn,txt){ if(!btn)return; btn.disabled=true; btn.dataset.old=btn.textContent; btn.textContent=txt; }
-function freeBtn(btn){ if(!btn)return; btn.disabled=false; if(btn.dataset.old) btn.textContent=btn.dataset.old; }
+function busyBtn(btn){ if(!btn)return; btn.disabled=true; }
+function freeBtn(btn){ if(!btn)return; btn.disabled=false; }
 
 function loadImageFile(f){
   const r=new FileReader();
@@ -265,7 +467,7 @@ const dI=document.getElementById('dropImg');
 
 function imgFilterStr(){
   const b=document.getElementById('i-brightness').value, c=document.getElementById('i-contrast').value, s=document.getElementById('i-saturate').value;
-  let f=`brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
+  let f='brightness('+b+'%) contrast('+c+'%) saturate('+s+'%)';
   if(PRESETS[imgPreset].f) f+=' '+PRESETS[imgPreset].f;
   return f;
 }
@@ -331,7 +533,6 @@ buildPresets('imgPresets',(k)=>{ imgPreset=k; markActive('imgPresets',k); applyI
 
 /* ---------- AI: models ---------- */
 let cocoModel=null, mobilenetModel=null, cocoVid=null;
-
 function modelsReady(){ return typeof cocoSsd!=='undefined' && typeof mobilenet!=='undefined'; }
 async function getCoco(){
   if(!modelsReady()) throw new Error('لا تزال مكتبات الذكاء تُحمّل، انتظر لحظات وحاول مرة أخرى');
@@ -339,11 +540,10 @@ async function getCoco(){
   return cocoModel;
 }
 
-/* AI 1: remove background */
 async function removeBg(btn){
   if(!img) return;
   if(!window.getSeg){ ilog('نموذج القص غير متاح على هذا المتصفح'); return; }
-  busyBtn(btn,'⏳ لحظات...');
+  busyBtn(btn);
   ilog('🧠 الذكاء يحلل الصورة ويفصل الخلفية...');
   try{
     const seg=await window.getSeg();
@@ -362,21 +562,19 @@ async function removeBg(btn){
     ox.putImageData(im,0,0);
     if(res.close) res.close();
     const ni=new Image();
-    ni.onload=()=>{ img=ni; applyImage(); ilog('✅ تمت إزالة الخلفية — النتيجة أصبحت الصورة الجديدة',1); };
+    ni.onload=()=>{ img=ni; applyImage(); ilog('✅ تمت إزالة الخلفية',1); };
     ni.src=out.toDataURL('image/png');
   }catch(e){ ilog('خطأ: '+e.message); }
   freeBtn(btn);
 }
 
-/* AI 2: object detection */
 async function detectObjects(btn){
   if(!img) return;
-  busyBtn(btn,'⏳ لحظات...');
+  busyBtn(btn);
   ilog('🧠 الذكاء يمسح الصورة بحثاً عن الأجسام...');
   try{
     const model=await getCoco();
     const preds=await model.detect(img,20,0.45);
-    // draw base + boxes (without filters so boxes align)
     imgCanvas.width=img.width; imgCanvas.height=img.height;
     ictx.clearRect(0,0,imgCanvas.width,imgCanvas.height);
     ictx.drawImage(img,0,0);
@@ -399,10 +597,9 @@ async function detectObjects(btn){
   freeBtn(btn);
 }
 
-/* AI 3: image description */
 async function describeImage(btn){
   if(!img) return;
-  busyBtn(btn,'⏳ لحظات...');
+  busyBtn(btn);
   ilog('🧠 الذكاء يفهم محتوى الصورة...');
   try{
     if(!modelsReady()) throw new Error('لا تزال مكتبات الذكاء تُحمّل، انتظر لحظات وحاول مرة أخرى');
@@ -437,7 +634,7 @@ const dV=document.getElementById('dropVid');
 
 function vidFilterStr(){
   const b=document.getElementById('v-brightness').value, c=document.getElementById('v-contrast').value, s=document.getElementById('v-saturate').value;
-  let f=`brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
+  let f='brightness('+b+'%) contrast('+c+'%) saturate('+s+'%)';
   if(PRESETS[vidPreset].f) f+=' '+PRESETS[vidPreset].f;
   return f;
 }
@@ -467,7 +664,6 @@ function snapshot(){
   vlog('📸 تم حفظ اللقطة');
 }
 
-/* AI 4: live detection on video */
 async function toggleVidDetect(btn){
   vidDetect=!vidDetect; btn.classList.toggle('active',vidDetect);
   if(vidDetect){
@@ -476,7 +672,7 @@ async function toggleVidDetect(btn){
       if(!cocoVid) cocoVid=await getCoco();
       vlog('🤖 كشف الأجسام المباشر مفعّل — شغّل الفيديو');
       detectLoop();
-    }catch(e){ vidDetect=false; btn.classList.remove('active'); vlog(''); ilog(''); document.getElementById('vstatus').textContent='خطأ: '+e.message; }
+    }catch(e){ vidDetect=false; btn.classList.remove('active'); document.getElementById('vstatus').textContent='خطأ: '+e.message; }
   } else { overlay.getContext('2d').clearRect(0,0,overlay.width,overlay.height); vlog(''); }
 }
 async function detectLoop(){
