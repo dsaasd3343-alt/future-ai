@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Future AI Studio — تعديل الصور والفيديو بالذكاء</title>
+<title>Future AI Studio — ذكاء اصطناعي حقيقي لتعديل الصور والفيديو</title>
+<!-- AI engines (client-side, free) -->
+<script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
 <style>
   :root{
     --bg:#070a14; --panel:#0d1322; --panel2:#121a2e; --line:rgba(255,255,255,.1);
@@ -11,39 +15,53 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI','Tahoma',Arial,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
-  .top{background:rgba(7,10,20,.9);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;backdrop-filter:blur(10px)}
-  .logo{display:flex;align-items:center;gap:10px;font-weight:800}
+  .top{background:rgba(7,10,20,.92);border-bottom:1px solid var(--line);padding:14px 20px;position:sticky;top:0;z-index:50;backdrop-filter:blur(10px)}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;flex-wrap:wrap}
   .logo .mark{width:34px;height:34px;border-radius:9px;background:var(--grad);display:grid;place-items:center;color:#070a14;font-size:1rem}
   .logo small{color:var(--muted);font-weight:400;font-size:.75rem}
-  .wrap{max-width:1000px;margin:0 auto;padding:20px}
-  .tabs{display:flex;gap:10px;margin:18px 0}
+  .wrap{max-width:1050px;margin:0 auto;padding:20px}
+  .lead{text-align:center;margin:20px 0 6px;color:var(--muted);font-size:.95rem}
+  .lead b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tabs{display:flex;gap:10px;margin:16px 0}
   .tab{flex:1;text-align:center;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:700;font-size:1rem;transition:.2s}
   .tab.active{background:var(--grad);color:#070a14;border-color:transparent}
   .pane{display:none}
   .pane.active{display:block}
-  .drop{border:2px dashed rgba(108,123,255,.5);border-radius:16px;padding:44px 20px;text-align:center;background:var(--panel);cursor:pointer;transition:.2s}
+  .drop{border:2px dashed rgba(108,123,255,.5);border-radius:16px;padding:44px 20px;text-align:center;background:var(--panel);cursor:pointer;transition:.2s;display:block}
   .drop:hover,.drop.over{border-color:var(--a2);background:var(--panel2)}
   .drop .ico{font-size:2.4rem;margin-bottom:10px}
   .drop p{color:var(--muted)}
   .drop b{color:var(--ink)}
-  .workspace{display:none;grid-template-columns:1fr 300px;gap:16px;margin-top:16px}
+  .workspace{display:none;grid-template-columns:1fr 320px;gap:16px;margin-top:16px}
   @media(max-width:800px){.workspace{grid-template-columns:1fr}}
-  .stage{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;place-items:center;min-height:260px;overflow:hidden}
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;place-items:center;min-height:260px;overflow:hidden;position:relative;
+    background-image:linear-gradient(45deg,#10182b 25%,transparent 25%),linear-gradient(-45deg,#10182b 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#10182b 75%),linear-gradient(-45deg,transparent 75%,#10182b 75%);
+    background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0}
   .stage canvas,.stage video{max-width:100%;max-height:60vh;border-radius:10px}
-  .controls{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;align-self:start}
-  .ctl h4{font-size:.85rem;color:var(--a2);margin-bottom:8px}
-  .slider{display:grid;grid-template-columns:76px 1fr 40px;gap:8px;align-items:center;font-size:.82rem;color:var(--muted)}
-  input[type=range]{accent-color:var(--a1);width:100%}
-  .slider output{color:var(--ink);text-align:center}
+  .vidbox{position:relative;display:inline-block}
+  .vidbox video{display:block;max-width:100%;max-height:60vh;border-radius:10px}
+  .vidbox .ovl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;border-radius:10px}
+  .controls{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;align-self:start;max-height:78vh;overflow-y:auto}
+  .ctl h4{font-size:.85rem;margin-bottom:8px}
+  .aibadge{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.4);color:var(--a2)}
+  .tools h4{display:flex;align-items:center;gap:6px;font-size:.9rem;margin-bottom:10px}
+  .tools h4 span{font-size:1rem;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .ctl{border-radius:12px}
   .btnrow{display:flex;flex-wrap:wrap;gap:8px}
-  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:9px 14px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.85rem;transition:.2s}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:10px 14px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.88rem;transition:.2s;flex:1;min-width:120px}
   .btn:hover{border-color:var(--a1)}
   .btn.primary{background:var(--grad);color:#070a14;font-weight:700;border:none}
   .btn.active{border-color:var(--a2);color:var(--a2)}
+  .btn:disabled{opacity:.5;cursor:wait}
+  .slider{display:grid;grid-template-columns:76px 1fr 40px;gap:8px;align-items:center;font-size:.82rem;color:var(--muted)}
+  input[type=range]{accent-color:var(--a1);width:100%}
+  .slider output{color:var(--ink);text-align:center}
   .presets{display:flex;flex-wrap:wrap;gap:7px}
   .preset{padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-size:.8rem}
   .preset.on{border-color:var(--a2);color:var(--a2)}
-  .status{margin-top:10px;text-align:center;color:var(--muted);font-size:.85rem;min-height:1.4em}
+  .status{margin-top:10px;text-align:center;color:var(--muted);font-size:.85rem;min-height:1.5em;line-height:1.7}
+  .status .ok{color:var(--a2)}
   .hidden{display:none!important}
   footer{padding:24px;text-align:center;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line);margin-top:30px}
 </style>
@@ -51,10 +69,12 @@
 <body>
 
 <div class="top">
-  <div class="logo"><span class="mark">◆</span> Future AI Studio <small>تعديل الصور والفيديو — مجاناً وبدون تسجيل</small></div>
+  <div class="logo"><span class="mark">◆</span> Future AI Studio <small>نماذج ذكاء اصطناعي حقيقية تعمل داخل جهازك</small></div>
 </div>
 
 <div class="wrap">
+  <p class="lead">إزالة خلفية بالذكاء • كشف الأجسام • وصف الصورة • تحسين تلقائي — <b>مجاناً وبدون رفع ملفاتك لأي سيرفر</b></p>
+
   <div class="tabs">
     <div class="tab active" id="tabImg" onclick="switchTab('img')">🖼️ تعديل الصور</div>
     <div class="tab" id="tabVid" onclick="switchTab('vid')">🎬 تعديل الفيديو</div>
@@ -64,22 +84,33 @@
   <div class="pane active" id="paneImg">
     <label class="drop" id="dropImg" for="fileImg">
       <div class="ico">🖼️</div>
-      <p><b>اسحب صورتك هنا</b> أو اضغط للاختيار<br>JPG / PNG / WebP — كل المعالجة تتم على جهازك مباشرة</p>
+      <p><b>اسحب صورتك هنا</b> أو اضغط للاختيار<br>JPG / PNG / WebP</p>
       <input type="file" id="fileImg" accept="image/*" class="hidden">
     </label>
     <div class="workspace" id="wsImg">
       <div class="stage"><canvas id="imgCanvas"></canvas></div>
       <div class="controls">
-        <div class="ctl"><h4>✨ تحسين تلقائي بالذكاء</h4><div class="btnrow"><button class="btn primary" onclick="autoEnhance()">تحسين تلقائي</button><button class="btn" onclick="resetAll()">إعادة ضبط</button></div></div>
-        <div class="ctl"><h4>🎛️ ضبط دقيق</h4>
+        <div class="ctl tools aibadge" style="padding:14px">
+          <h4><span>🤖</span> أدوات الذكاء الاصطناعي</h4>
+          <div class="btnrow">
+            <button class="btn primary" onclick="removeBg(this)">✂️ إزالة الخلفية</button>
+            <button class="btn" onclick="detectObjects(this)">🎯 كشف الأجسام</button>
+            <button class="btn" onclick="describeImage(this)">🧠 وصف الصورة</button>
+          </div>
+          <div class="btnrow" style="margin-top:8px">
+            <button class="btn" onclick="autoEnhance(this)">✨ تحسين تلقائي</button>
+            <button class="btn" onclick="restoreOriginal(this)">↩️ الأصلية</button>
+          </div>
+        </div>
+        <div class="status" id="istatus"></div>
+        <div class="ctl">
+          <h4>🎛️ ضبط دقيق</h4>
           <div class="slider"><span>السطوع</span><input type="range" id="i-brightness" min="50" max="150" value="100" oninput="applyImage()"><output id="o-brightness">100</output></div>
           <div class="slider"><span>التباين</span><input type="range" id="i-contrast" min="50" max="150" value="100" oninput="applyImage()"><output id="o-contrast">100</output></div>
           <div class="slider"><span>التشبع</span><input type="range" id="i-saturate" min="0" max="200" value="100" oninput="applyImage()"><output id="o-saturate">100</output></div>
           <div class="slider"><span>الحدة</span><input type="range" id="i-sharp" min="0" max="100" value="0" oninput="applyImage()"><output id="o-sharp">0</output></div>
         </div>
-        <div class="ctl"><h4>🎨 فلاتر جاهزة</h4>
-          <div class="presets" id="imgPresets"></div>
-        </div>
+        <div class="ctl"><h4>🎨 فلاتر جاهزة</h4><div class="presets" id="imgPresets"></div></div>
         <div class="ctl"><h4>🔄 تدوير وتقليب</h4>
           <div class="btnrow">
             <button class="btn" onclick="rotateImg(-90)">↺ يمين</button>
@@ -103,12 +134,22 @@
   <div class="pane" id="paneVid">
     <label class="drop" id="dropVid" for="fileVid">
       <div class="ico">🎬</div>
-      <p><b>اسحب فيديوك هنا</b> أو اضغط للاختيار<br>MP4 / WebM / MOV — يفضل أقل من 200MB للسلاسة</p>
+      <p><b>اسحب فيديوك هنا</b> أو اضغط للاختيار<br>MP4 / WebM / MOV — يفضل أقل من 200MB</p>
       <input type="file" id="fileVid" accept="video/*" class="hidden">
     </label>
     <div class="workspace" id="wsVid">
-      <div class="stage"><video id="vid" controls playsinline></video></div>
+      <div class="stage">
+        <div class="vidbox">
+          <video id="vid" controls playsinline></video>
+          <canvas class="ovl" id="vidOverlay"></canvas>
+        </div>
+      </div>
       <div class="controls">
+        <div class="ctl tools aibadge" style="padding:14px">
+          <h4><span>🤖</span> ذكاء على الفيديو</h4>
+          <div class="btnrow"><button class="btn primary" id="vidDetBtn" onclick="toggleVidDetect(this)">🎯 كشف الأجسام المباشر</button></div>
+        </div>
+        <div class="status" id="vstatus"></div>
         <div class="ctl"><h4>✂️ قص المقطع (الثواني)</h4>
           <div class="slider"><span>من</span><input type="range" id="v-start" min="0" max="100" value="0" oninput="syncVid()"><output id="vo-start">0</output></div>
           <div class="slider"><span>إلى</span><input type="range" id="v-end" min="0" max="100" value="100" oninput="syncVid()"><output id="vo-end">0</output></div>
@@ -134,7 +175,6 @@
             <button class="btn primary" id="exportBtn" onclick="exportVideo()">🎬 تصدير الفيديو (WebM)</button>
             <button class="btn" onclick="snapshot()">📸 لقطة صورة</button>
           </div>
-          <div class="status" id="vstatus"></div>
         </div>
         <div class="btnrow"><button class="btn" onclick="newVideo()">📥 فيديو جديد</button></div>
       </div>
@@ -142,7 +182,24 @@
   </div>
 </div>
 
-<footer>© 2026 Future AI Studio — تعمل بالكامل داخل متصفحك • لا تُرفع ملفاتك لأي سيرفر • الإصدار 2.2</footer>
+<footer>© 2026 Future AI Studio — نماذج MediaPipe و TensorFlow تعمل بالكامل داخل متصفحك • لا تُرفع ملفاتك لأي سيرفر • الإصدار 3.0</footer>
+
+<!-- MediaPipe image segmentation (background removal) -->
+<script type="module">
+  let seg=null;
+  window.getSeg = async () => {
+    if (seg) return seg;
+    const { FilesetResolver, ImageSegmenter } = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14");
+    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    seg = await ImageSegmenter.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite", delegate: "GPU" },
+      runningMode: "IMAGE",
+      outputCategoryMask: true,
+      outputConfidenceMasks: false
+    });
+    return seg;
+  };
+</script>
 
 <script>
 /* ---------- tabs ---------- */
@@ -153,7 +210,11 @@ function switchTab(w){
   document.getElementById('paneVid').classList.toggle('active',w==='vid');
 }
 
-/* ---------- shared presets ---------- */
+/* ---------- labels ---------- */
+const AR={person:'إنسان','cell phone':'جوال',laptop:'لابتوب',car:'سيارة',truck:'شاحنة',bus:'باص',bicycle:'دراجة هوائية',motorcycle:'دراجة نارية','sports ball':'كرة',dog:'كلب',cat:'قطة',bird:'طائر',horse:'حصان',sheep:'خروف',cow:'بقرة',elephant:'فيل',bear:'دب',zebra:'حصان مخطط',giraffe:'زرافة',chair:'كرسي',couch:'أريكة','potted plant':'نبتة',bed:'سرير','dining table':'طاولة',bottle:'زجاجة','wine glass':'كأس','cup':'كوب',banana:'موزة',apple:'تفاحة',orange:'برتقالة',pizza:'بيتزا',cake:'كيكة',book:'كتاب','cellular telephone':'جوال','tv':'شاشة','remote':'ريموت',keyboard:'كيبورد',mouse:'فأرة',backpack:'حقيبة ظهر',handbag:'حقيبة يد',suitcase:'حقيبة سفر',clock:'ساعة','scissors':'مقص','teddy bear':'دبداب',toothbrush:'فرشاة أسنان','dining table':'طاولة','hot dog':'هوت دوغ','frisbee':'فريسبي','baseball glove':'قفاز بيسبول','sports car':'سيارة رياضية','monitor':'شاشة','coffee mug':'كوب قهوة','Egyptian cat':'قطة','golden retriever':'كلب','Labrador retriever':'كلب','mobile phone':'جوال'};
+const arName=e=>AR[e]||e;
+
+/* ---------- presets ---------- */
 const PRESETS={
   none:{label:'طبيعي',f:''},
   bw:{label:'أبيض وأسود',f:'grayscale(1)'},
@@ -169,30 +230,41 @@ function buildPresets(containerId,onPick){
   const box=document.getElementById(containerId); box.innerHTML='';
   for(const k in PRESETS){
     const b=document.createElement('span'); b.className='preset'; b.textContent=PRESETS[k].label; b.dataset.k=k;
-    b.onclick=()=>onPick(k,b);
-    box.appendChild(b);
+    b.onclick=()=>onPick(k,b); box.appendChild(b);
   }
 }
 function markActive(containerId,k){
   document.querySelectorAll('#'+containerId+' .preset').forEach(p=>p.classList.toggle('on',p.dataset.k===k));
 }
 
-/* ---------- IMAGE ---------- */
-let img=null, rot=0, flip=false;
+/* ---------- IMAGE state ---------- */
+let img=null, originalSrc=null, rot=0, flip=false;
 const imgCanvas=document.getElementById('imgCanvas'), ictx=imgCanvas.getContext('2d');
+
+function ilog(t,ok){ const s=document.getElementById('istatus'); s.innerHTML=ok?'<span class="ok">'+t+'</span>':t; }
+function busyBtn(btn,txt){ if(!btn)return; btn.disabled=true; btn.dataset.old=btn.textContent; btn.textContent=txt; }
+function freeBtn(btn){ if(!btn)return; btn.disabled=false; if(btn.dataset.old) btn.textContent=btn.dataset.old; }
 
 function loadImageFile(f){
   const r=new FileReader();
-  r.onload=e=>{ const i=new Image(); i.onload=()=>{ img=i; rot=0; flip=false; document.getElementById('wsImg').style.display='grid'; document.getElementById('dropImg').style.display='none'; applyImage(); }; i.src=e.target.result; };
+  r.onload=e=>{ const i=new Image(); i.onload=()=>{ setBaseImage(i,e.target.result); }; i.src=e.target.result; };
   r.readAsDataURL(f);
+}
+function setBaseImage(i,src){
+  img=i; originalSrc=src||i.src; rot=0; flip=false;
+  document.getElementById('wsImg').style.display='grid';
+  document.getElementById('dropImg').style.display='none';
+  ['i-brightness','i-contrast','i-saturate'].forEach(id=>document.getElementById(id).value=100);
+  document.getElementById('i-sharp').value=0;
+  imgPreset='none'; markActive('imgPresets','none');
+  applyImage(); ilog('');
 }
 document.getElementById('fileImg').onchange=e=>{ if(e.target.files[0]) loadImageFile(e.target.files[0]); };
 const dI=document.getElementById('dropImg');
 ['dragover','dragleave','drop'].forEach(ev=>dI.addEventListener(ev,e=>{ e.preventDefault(); dI.classList.toggle('over',ev==='dragover'); if(ev==='drop'&&e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]); }));
 
 function imgFilterStr(){
-  const b=document.getElementById('i-brightness').value, c=document.getElementById('i-contrast').value,
-        s=document.getElementById('i-saturate').value;
+  const b=document.getElementById('i-brightness').value, c=document.getElementById('i-contrast').value, s=document.getElementById('i-saturate').value;
   let f=`brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
   if(PRESETS[imgPreset].f) f+=' '+PRESETS[imgPreset].f;
   return f;
@@ -201,7 +273,6 @@ function applyImage(){
   if(!img) return;
   ['brightness','contrast','saturate','sharp'].forEach(k=>document.getElementById('o-'+k).textContent=document.getElementById('i-'+k).value);
   const swap=rot%180!==0;
-  const w=img.videoWidth||img.width, h=img.videoHeight||img.height;
   const tw=swap?img.height:img.width, th=swap?img.width:img.height;
   imgCanvas.width=tw; imgCanvas.height=th;
   ictx.save();
@@ -232,24 +303,24 @@ function sharpen(){
 }
 function rotateImg(deg){ rot=(rot+deg+360)%360; applyImage(); }
 function flipH(){ flip=!flip; applyImage(); }
-function autoEnhance(){
+function autoEnhance(btn){
   if(!img) return;
-  // measure average brightness on a downscaled copy
   const m=document.createElement('canvas'); m.width=64; m.height=64;
   const mc=m.getContext('2d'); mc.drawImage(img,0,0,64,64);
   const px=mc.getImageData(0,0,64,64).data;
   let sum=0; for(let i=0;i<px.length;i+=4) sum+=(px[i]*.299+px[i+1]*.587+px[i+2]*.114);
   const avg=sum/(px.length/4);
-  const bright=Math.round(Math.min(150,Math.max(50,100+(128-avg)*.55)));
-  document.getElementById('i-brightness').value=bright;
+  document.getElementById('i-brightness').value=Math.round(Math.min(150,Math.max(50,100+(128-avg)*.55)));
   document.getElementById('i-contrast').value=Math.min(150,110+Math.round((128-Math.abs(avg-128))/40));
   document.getElementById('i-saturate').value=Math.min(200,118);
   document.getElementById('i-sharp').value=Math.min(100,25);
-  applyImage();
-  vlog('تم التحسين التلقائي ✨');
+  applyImage(); ilog('✨ تم التحسين التلقائي',1);
 }
-function resetAll(){ ['i-brightness','i-contrast','i-saturate'].forEach(id=>document.getElementById(id).value=100); document.getElementById('i-sharp').value=0; imgPreset='none'; markActive('imgPresets','none'); applyImage(); }
-function newImage(){ img=null; document.getElementById('wsImg').style.display='none'; document.getElementById('dropImg').style.display='block'; }
+function restoreOriginal(btn){
+  if(!originalSrc) return;
+  const i=new Image(); i.onload=()=>{ setBaseImage(i,originalSrc); ilog('↩️ تمت استعادة الصورة الأصلية',1); }; i.src=originalSrc;
+}
+function newImage(){ img=null; originalSrc=null; document.getElementById('wsImg').style.display='none'; document.getElementById('dropImg').style.display='block'; }
 function downloadImage(type){
   const q=+document.getElementById('i-quality').value/100;
   const a=document.createElement('a');
@@ -258,10 +329,95 @@ function downloadImage(type){
 }
 buildPresets('imgPresets',(k)=>{ imgPreset=k; markActive('imgPresets',k); applyImage(); });
 
-/* ---------- VIDEO ---------- */
-const vid=document.getElementById('vid');
-let vidSpeed=1, exporting=false;
+/* ---------- AI: models ---------- */
+let cocoModel=null, mobilenetModel=null, cocoVid=null;
 
+function modelsReady(){ return typeof cocoSsd!=='undefined' && typeof mobilenet!=='undefined'; }
+async function getCoco(){
+  if(!modelsReady()) throw new Error('لا تزال مكتبات الذكاء تُحمّل، انتظر لحظات وحاول مرة أخرى');
+  if(!cocoModel) cocoModel=await cocoSsd.load({base:'lite_mobilenet_v2'});
+  return cocoModel;
+}
+
+/* AI 1: remove background */
+async function removeBg(btn){
+  if(!img) return;
+  if(!window.getSeg){ ilog('نموذج القص غير متاح على هذا المتصفح'); return; }
+  busyBtn(btn,'⏳ لحظات...');
+  ilog('🧠 الذكاء يحلل الصورة ويفصل الخلفية...');
+  try{
+    const seg=await window.getSeg();
+    const res=seg.segment(img);
+    const mask=res.categoryMask.getAsUint8Array(), mw=res.categoryMask.width, mh=res.categoryMask.height;
+    const out=document.createElement('canvas'); out.width=img.width; out.height=img.height;
+    const ox=out.getContext('2d'); ox.drawImage(img,0,0);
+    const im=ox.getImageData(0,0,out.width,out.height), d=im.data;
+    for(let y=0;y<out.height;y++){
+      const my=Math.min(mh-1,(y/out.height*mh)|0);
+      for(let x=0;x<out.width;x++){
+        const mx=Math.min(mw-1,(x/out.width*mw)|0);
+        if(mask[my*mw+mx]===0) d[(y*out.width+x)*4+3]=0;
+      }
+    }
+    ox.putImageData(im,0,0);
+    if(res.close) res.close();
+    const ni=new Image();
+    ni.onload=()=>{ img=ni; applyImage(); ilog('✅ تمت إزالة الخلفية — النتيجة أصبحت الصورة الجديدة',1); };
+    ni.src=out.toDataURL('image/png');
+  }catch(e){ ilog('خطأ: '+e.message); }
+  freeBtn(btn);
+}
+
+/* AI 2: object detection */
+async function detectObjects(btn){
+  if(!img) return;
+  busyBtn(btn,'⏳ لحظات...');
+  ilog('🧠 الذكاء يمسح الصورة بحثاً عن الأجسام...');
+  try{
+    const model=await getCoco();
+    const preds=await model.detect(img,20,0.45);
+    // draw base + boxes (without filters so boxes align)
+    imgCanvas.width=img.width; imgCanvas.height=img.height;
+    ictx.clearRect(0,0,imgCanvas.width,imgCanvas.height);
+    ictx.drawImage(img,0,0);
+    preds.forEach(p=>{
+      const[x,y,w,h]=p.bbox;
+      ictx.strokeStyle='#22d3ee'; ictx.lineWidth=Math.max(2,img.width/300);
+      ictx.strokeRect(x,y,w,h);
+      ictx.fillStyle='rgba(34,211,238,.85)';
+      const label=arName(p.class)+' '+(p.score*100).toFixed(0)+'%';
+      const fs=Math.max(14,img.width/35);
+      ictx.font='bold '+fs+'px Tahoma';
+      const tw=ictx.measureText(label).width;
+      ictx.fillRect(x,y-fs*1.3,tw+12,fs*1.4);
+      ictx.fillStyle='#070a14';
+      ictx.fillText(label,x+6,y-fs*.35);
+    });
+    if(preds.length) ilog('🎯 وجد الذكاء '+preds.length+' عنصر: '+preds.map(p=>arName(p.class)).join('، '),1);
+    else ilog('لم يجد الذكاء أجساماً واضحة في الصورة');
+  }catch(e){ ilog('خطأ: '+e.message); }
+  freeBtn(btn);
+}
+
+/* AI 3: image description */
+async function describeImage(btn){
+  if(!img) return;
+  busyBtn(btn,'⏳ لحظات...');
+  ilog('🧠 الذكاء يفهم محتوى الصورة...');
+  try{
+    if(!modelsReady()) throw new Error('لا تزال مكتبات الذكاء تُحمّل، انتظر لحظات وحاول مرة أخرى');
+    if(!mobilenetModel) mobilenetModel=await mobilenet.load({version:2,alpha:1.0});
+    const preds=await mobilenetModel.classify(img,3);
+    ilog('🧠 الذكاء يرى: '+preds.map(p=>arName(p.className.split(',')[0])+' '+Math.round(p.probability*100)+'%').join(' • '),1);
+  }catch(e){ ilog('خطأ: '+e.message); }
+  freeBtn(btn);
+}
+
+/* ---------- VIDEO ---------- */
+const vid=document.getElementById('vid'), overlay=document.getElementById('vidOverlay');
+let vidSpeed=1, exporting=false, vidDetect=false;
+
+function vlog(t){ document.getElementById('vstatus').innerHTML=t?'<span class="ok">'+t+'</span>':''; }
 function loadVideoFile(f){
   vid.src=URL.createObjectURL(f);
   vid.onloadedmetadata=()=>{
@@ -272,8 +428,7 @@ function loadVideoFile(f){
     document.getElementById('v-end').max=Math.round(dur);
     document.getElementById('v-start').max=Math.round(dur);
     document.getElementById('vo-end').textContent=Math.round(dur);
-    vid.currentTime=0;
-    applyVid();
+    vid.currentTime=0; applyVid();
   };
 }
 document.getElementById('fileVid').onchange=e=>{ if(e.target.files[0]) loadVideoFile(e.target.files[0]); };
@@ -292,14 +447,13 @@ function applyVid(){
 }
 function syncVid(){
   const s=+document.getElementById('v-start').value, e=+document.getElementById('v-end').value;
-  if(e-s<1){ document.getElementById('v-end').value=s+1; }
+  if(e-s<1) document.getElementById('v-end').value=s+1;
   document.getElementById('vo-start').textContent=document.getElementById('v-start').value;
   document.getElementById('vo-end').textContent=document.getElementById('v-end').value;
 }
 function previewSeg(){
   const s=+document.getElementById('v-start').value, e=+document.getElementById('v-end').value;
-  vid.currentTime=s; vid.playbackRate=vidSpeed;
-  vid.play();
+  vid.currentTime=s; vid.playbackRate=vidSpeed; vid.play();
   vid.ontimeupdate=()=>{ if(vid.currentTime>=e){ vid.pause(); vid.ontimeupdate=null; } };
 }
 function setSpeed(v){ vidSpeed=v; vid.playbackRate=v; document.querySelectorAll('.vspd').forEach(b=>b.classList.toggle('active',b.textContent===(v+'×'))); }
@@ -310,9 +464,41 @@ function snapshot(){
   c.width=vid.videoWidth*scale; c.height=vid.videoHeight*scale;
   const cx=c.getContext('2d'); cx.filter=vidFilterStr(); cx.drawImage(vid,0,0,c.width,c.height);
   const a=document.createElement('a'); a.download='future-ai-shot.png'; a.href=c.toDataURL('image/png'); a.click();
-  vlog('تم حفظ اللقطة 📸');
+  vlog('📸 تم حفظ اللقطة');
 }
-function vlog(t){ document.getElementById('vstatus').textContent=t; }
+
+/* AI 4: live detection on video */
+async function toggleVidDetect(btn){
+  vidDetect=!vidDetect; btn.classList.toggle('active',vidDetect);
+  if(vidDetect){
+    try{
+      vlog('⏳ يُحمّل نموذج كشف الأجسام...');
+      if(!cocoVid) cocoVid=await getCoco();
+      vlog('🤖 كشف الأجسام المباشر مفعّل — شغّل الفيديو');
+      detectLoop();
+    }catch(e){ vidDetect=false; btn.classList.remove('active'); vlog(''); ilog(''); document.getElementById('vstatus').textContent='خطأ: '+e.message; }
+  } else { overlay.getContext('2d').clearRect(0,0,overlay.width,overlay.height); vlog(''); }
+}
+async function detectLoop(){
+  if(!vidDetect||!vid.src) return;
+  if(!vid.paused&&!vid.ended){
+    try{
+      const preds=await cocoVid.detect(vid,10,0.55);
+      overlay.width=vid.videoWidth||640; overlay.height=vid.videoHeight||360;
+      const c=overlay.getContext('2d'); c.clearRect(0,0,overlay.width,overlay.height);
+      preds.forEach(p=>{
+        const[x,y,w,h]=p.bbox;
+        c.strokeStyle='#22d3ee'; c.lineWidth=Math.max(2,overlay.width/300);
+        c.strokeRect(x,y,w,h);
+        c.fillStyle='#22d3ee';
+        const fs=Math.max(14,overlay.width/40);
+        c.font='bold '+fs+'px Tahoma';
+        c.fillText(arName(p.class)+' '+(p.score*100).toFixed(0)+'%',x+4,y+fs);
+      });
+    }catch(e){}
+  }
+  requestAnimationFrame(detectLoop);
+}
 
 async function exportVideo(){
   if(exporting||!vid.src) return;
@@ -324,10 +510,7 @@ async function exportVideo(){
     c.width=Math.round(vid.videoWidth*scale/2)*2; c.height=Math.round(vid.videoHeight*scale/2)*2;
     const cx=c.getContext('2d');
     const stream=c.captureStream(30);
-    try{
-      const av=(vid.captureStream?vid.captureStream():null);
-      if(av) av.getAudioTracks().forEach(t=>stream.addTrack(t));
-    }catch(_){}
+    try{ const av=vid.captureStream?vid.captureStream():null; if(av) av.getAudioTracks().forEach(t=>stream.addTrack(t)); }catch(_){}
     let mime='video/webm;codecs=vp9,opus';
     if(!MediaRecorder.isTypeSupported(mime)) mime='video/webm';
     const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4000000});
@@ -335,24 +518,19 @@ async function exportVideo(){
     const done=new Promise(r=>rec.onstop=r);
     vid.muted=false; vid.currentTime=s; vid.playbackRate=vidSpeed;
     await new Promise(r=>{ vid.onseeked=r; });
-    rec.start();
-    vid.play();
-    vlog('⏳ جاري التصدير... يمكن أن يستغرق مدة المقطع نفسها');
-    const draw=()=>{
-      if(vid.paused||vid.currentTime>=e){ return; }
-      cx.filter=vidFilterStr(); cx.drawImage(vid,0,0,c.width,c.height);
-      requestAnimationFrame(draw);
-    };
+    rec.start(); vid.play();
+    vlog('⏳ جاري التصدير...');
+    const draw=()=>{ if(vid.paused||vid.currentTime>=e) return; cx.filter=vidFilterStr(); cx.drawImage(vid,0,0,c.width,c.height); requestAnimationFrame(draw); };
     draw();
     const stopper=setInterval(()=>{ if(vid.currentTime>=e||vid.paused){ vid.pause(); rec.stop(); clearInterval(stopper); } },200);
     await done;
     const blob=new Blob(chunks,{type:'video/webm'});
     const a=document.createElement('a'); a.download='future-ai-video.webm'; a.href=URL.createObjectURL(blob); a.click();
-    vlog('✅ تم التصدير — تحميل الملف');
-  }catch(err){ vlog('حدث خطأ: '+err.message); }
+    vlog('✅ تم التصدير');
+  }catch(err){ vlog('خطأ: '+err.message); }
   exporting=false; btn.disabled=false;
 }
-function newVideo(){ vid.pause(); vid.src=''; document.getElementById('wsVid').style.display='none'; document.getElementById('dropVid').style.display='block'; }
+function newVideo(){ vidDetect=false; vid.pause(); vid.src=''; document.getElementById('wsVid').style.display='none'; document.getElementById('dropVid').style.display='block'; }
 buildPresets('vidPresets',(k)=>{ vidPreset=k; markActive('vidPresets',k); applyVid(); });
 </script>
 </body>
