@@ -246,7 +246,7 @@
   </div>
 </div>
 
-<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.1</footer>
+<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.2</footer>
 
 <script type="module">
   let seg=null;
@@ -324,14 +324,34 @@ let genStyle='none';
 function glog(t){ document.getElementById('genStatus').innerHTML=t; }
 function slog(t){ document.getElementById('storyStatus').innerHTML=t; }
 
+const hasArabic=s=>/[؀-ۿ]/.test(s);
+async function toEnglish(prompt){
+  if(!hasArabic(prompt)) return prompt;
+  try{
+    const q=encodeURIComponent('Translate this text to English, output ONLY the translation, nothing else: '+prompt);
+    const res=await fetch('https://text.pollinations.ai/'+q);
+    if(!res.ok) throw 0;
+    let txt=(await res.text()).trim().replace(/^["\u00AB\u201C']+|["\u00BB\u201D']+$/g,'');
+    if(txt&&txt.length<600&&!/error/i.test(txt)) return txt;
+    throw 0;
+  }catch(e){ return prompt; }
+}
 async function pollinate(prompt,w,h,seed){
   const add=STYLES[genStyle].add;
   const full=prompt+(add?', '+add:'');
-  const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(full)+'?width='+w+'&height='+h+'&seed='+seed+'&nologo=true&model=flux';
-  const res=await fetch(url);
-  if(!res.ok) throw new Error('خدمة التوليد ردت '+res.status+' — حاول بعد لحظات');
-  const blob=await res.blob();
-  return URL.createObjectURL(blob);
+  const base='https://image.pollinations.ai/prompt/'+encodeURIComponent(full)+'?width='+w+'&height='+h+'&seed='+seed+'&nologo=true&model=flux';
+  let lastErr=new Error('فشل التوليد');
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      const res=await fetch(base+'&rid='+Date.now());
+      if(res.ok) return URL.createObjectURL(await res.blob());
+      if(res.status===402) lastErr=new Error('خدمة التوليد المجانية مشغولة حالياً (402) — انتظر شوية واضغط زر التوليد مرة ثانية');
+      else lastErr=new Error('خدمة التوليد ردت '+res.status);
+      if(res.status!==402&&res.status!==429&&res.status<500) break;
+    }catch(e){ lastErr=e; }
+    await new Promise(r=>setTimeout(r,4000*(attempt+1)));
+  }
+  throw lastErr;
 }
 
 async function generateImages(){
@@ -343,7 +363,13 @@ async function generateImages(){
   const grid=document.getElementById('genResults');
   const seed=Math.floor(Math.random()*999999);
   try{
+    if(hasArabic(prompt)){
+      glog('🔄 نترجم وصفك للإنجليزي حتى تفهمه أقوى... ');
+      prompt=await toEnglish(prompt);
+      glog('✅ الترجمة: '+prompt);
+    }
     for(let i=0;i<n;i++){
+      if(i>0) await new Promise(r=>setTimeout(r,1500));
       glog('🎨 الذكاء يرسم الصورة '+(i+1)+' من '+n+'... (يمكن أن تستغرق حتى دقيقة)');
       const url=await pollinate(prompt,w,h,seed+i*77);
       const card=document.createElement('div'); card.className='gcard';
@@ -382,7 +408,12 @@ async function generateStoryVideo(){
   const seed=Math.floor(Math.random()*999999);
   const imgs=[];
   try{
+    if(hasArabic(prompt)){
+      slog('🔄 نترجم وصفك للإنجليزي...');
+      prompt=await toEnglish(prompt);
+    }
     for(let i=0;i<scenes;i++){
+      if(i>0) await new Promise(r=>setTimeout(r,1500));
       slog('🎨 رسم المشهد '+(i+1)+' من '+scenes+'...');
       const url=await pollinate(prompt+', cinematic still, '+shots[i%shots.length],W,H,seed+i*77);
       const im=await new Promise((res,rej)=>{ const x=new Image(); x.onload=()=>res(x); x.onerror=()=>rej(new Error('فشل تحميل مشهد')); x.src=url; });
