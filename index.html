@@ -62,11 +62,11 @@
 
   <!-- IMAGES -->
   <div class="pane active" id="paneImg">
-    <div class="drop" id="dropImg" onclick="document.getElementById('fileImg').click()">
+    <label class="drop" id="dropImg" for="fileImg">
       <div class="ico">🖼️</div>
       <p><b>اسحب صورتك هنا</b> أو اضغط للاختيار<br>JPG / PNG / WebP — كل المعالجة تتم على جهازك مباشرة</p>
       <input type="file" id="fileImg" accept="image/*" class="hidden">
-    </div>
+    </label>
     <div class="workspace" id="wsImg">
       <div class="stage"><canvas id="imgCanvas"></canvas></div>
       <div class="controls">
@@ -101,11 +101,11 @@
 
   <!-- VIDEO -->
   <div class="pane" id="paneVid">
-    <div class="drop" id="dropVid" onclick="document.getElementById('fileVid').click()">
+    <label class="drop" id="dropVid" for="fileVid">
       <div class="ico">🎬</div>
       <p><b>اسحب فيديوك هنا</b> أو اضغط للاختيار<br>MP4 / WebM / MOV — يفضل أقل من 200MB للسلاسة</p>
       <input type="file" id="fileVid" accept="video/*" class="hidden">
-    </div>
+    </label>
     <div class="workspace" id="wsVid">
       <div class="stage"><video id="vid" controls playsinline></video></div>
       <div class="controls">
@@ -142,7 +142,7 @@
   </div>
 </div>
 
-<footer>© 2026 Future AI Studio — تعمل بالكامل داخل متصفحك • لا تُرفع ملفاتك لأي سيرفر</footer>
+<footer>© 2026 Future AI Studio — تعمل بالكامل داخل متصفحك • لا تُرفع ملفاتك لأي سيرفر • الإصدار 2.2</footer>
 
 <script>
 /* ---------- tabs ---------- */
