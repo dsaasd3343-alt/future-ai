@@ -246,7 +246,22 @@
   </div>
 </div>
 
-<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.2</footer>
+<div class="gpanel" style="margin-top:24px;text-align:center">
+  <h3>💛 دعم المشروع</h3>
+  <p class="hint">كل الخدمات مجانية وتبقى مجانية. إذا استفدت وقدر تدعم بأي مبلغ اختياري — حتى دولار واحد يفرحنا ويدعمنا نطور أكثر 🙏</p>
+  <div class="btnrow" style="max-width:500px;margin:14px auto 0">
+    <input type="text" inputmode="decimal" id="donateAmount" placeholder="أي مبلغ تختاره..." style="flex:2;min-width:140px">
+    <select id="donateCurrency" style="flex:1;min-width:95px">
+      <option value="USD">$ USD</option>
+      <option value="EUR">€ EUR</option>
+      <option value="GBP">£ GBP</option>
+    </select>
+    <button class="btn primary" style="flex:1;min-width:110px" onclick="donate()">💛 تبرع</button>
+  </div>
+  <p class="hint">الدفع يفتح بأمان على PayPal — اترك الخانة فاضية واختر المبلغ هناك إذا تريد</p>
+</div>
+
+<footer>© 2026 Future AI Studio — التوليد عبر Pollinations والتحليل عبر MediaPipe و TensorFlow داخل متصفحك • الإصدار 4.3</footer>
 
 <script type="module">
   let seg=null;
@@ -761,6 +776,16 @@ async function exportVideo(){
 }
 function newVideo(){ vidDetect=false; vid.pause(); vid.src=''; document.getElementById('wsVid').style.display='none'; document.getElementById('dropVid').style.display='block'; }
 buildPresets('vidPresets',(k)=>{ vidPreset=k; markActive('vidPresets',k); applyVid(); });
+
+/* ---------- DONATION (optional) ---------- */
+function donate(){
+  const raw=document.getElementById('donateAmount').value.trim();
+  const amt=parseFloat(raw);
+  const cur=document.getElementById('donateCurrency').value;
+  let url='https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business='+encodeURIComponent('Imad.dreamer87@gmail.com')+'&currency_code='+cur+'&item_name='+encodeURIComponent('Future AI Studio');
+  if(amt>0) url+='&amount='+encodeURIComponent(amt);
+  window.open(url,'_blank');
+}
 </script>
 </body>
 </html>
